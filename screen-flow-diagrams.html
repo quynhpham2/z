@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Sơ đồ luồng màn hình — App DATN</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<style>
+  :root {
+    --primary: #2563EB;
+    --primary-dark: #1E40AF;
+    --primary-light: #DBEAFE;
+    --ink: #0F172A;
+    --muted: #475569;
+    --line: #E2E8F0;
+    --bg: #F8FAFC;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 0;
+    font-family: 'Segoe UI', 'Inter', system-ui, -apple-system, sans-serif;
+    background: var(--bg); color: var(--ink);
+  }
+  header {
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    color: #fff; padding: 28px 56px;
+  }
+  header h1 { margin: 0; font-size: 28px; font-weight: 700; }
+  header p { margin: 6px 0 0; opacity: .9; font-size: 14px; }
+
+  .toc {
+    display: flex; gap: 8px; flex-wrap: wrap;
+    padding: 16px 56px; background: #fff; border-bottom: 1px solid var(--line);
+    position: sticky; top: 0; z-index: 10;
+  }
+  .toc a {
+    padding: 6px 14px; border-radius: 999px;
+    background: var(--primary-light); color: var(--primary-dark);
+    text-decoration: none; font-size: 13px; font-weight: 600;
+  }
+  .toc a:hover { background: var(--primary); color: #fff; }
+
+  .diagram-section {
+    padding: 40px 56px 56px;
+    max-width: 1400px; margin: 0 auto;
+  }
+  .diagram-title {
+    display: flex; align-items: center; gap: 16px;
+    margin-bottom: 24px;
+  }
+  .diagram-title .num {
+    width: 44px; height: 44px; border-radius: 50%;
+    background: var(--primary); color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 18px;
+  }
+  .diagram-title h2 {
+    margin: 0; color: var(--primary-dark);
+    font-size: 26px; font-weight: 700;
+    border-bottom: 3px solid var(--primary);
+    padding-bottom: 8px; flex: 1;
+  }
+  .diagram-card {
+    background: #fff; border: 1px solid var(--line); border-radius: 14px;
+    padding: 32px; box-shadow: 0 4px 16px rgba(0,0,0,.04);
+    overflow-x: auto;
+  }
+  .diagram-card .mermaid { display: flex; justify-content: center; }
+  .diagram-card .mermaid svg { max-width: 100%; height: auto; }
+
+  .legend {
+    margin-top: 14px; display: flex; gap: 18px; flex-wrap: wrap;
+    color: var(--muted); font-size: 13px;
+  }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .legend .sw {
+    width: 14px; height: 14px; border-radius: 3px;
+    border: 2px solid var(--primary);
+  }
+  .legend .sw.entry { background: var(--primary); border-color: var(--primary); }
+  .legend .sw.main { background: var(--primary-light); border-color: var(--primary); }
+  .legend .sw.sec { background: #fff; border-color: var(--primary); }
+  .legend .sw.action { background: #FEF3C7; border-color: #F59E0B; }
+
+  footer {
+    padding: 24px 56px; text-align: center;
+    color: var(--muted); font-size: 13px;
+    border-top: 1px solid var(--line); background: #fff;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Sơ đồ luồng màn hình — App DATN</h1>
+  <p>Ứng dụng đặt lịch hẹn dịch vụ · Mỗi sơ đồ tương ứng một module/luồng nghiệp vụ chính</p>
+</header>
+
+<nav class="toc">
+  <a href="#d1">1. Tổng quan</a>
+  <a href="#d2">2. Khách hàng &amp; Đặt lịch</a>
+  <a href="#d3">3. Quản lý cửa hàng</a>
+  <a href="#d4">4. Đăng ký cửa hàng</a>
+</nav>
+
+<!-- =================== 1. OVERVIEW =================== -->
+<section class="diagram-section" id="d1">
+  <div class="diagram-title">
+    <div class="num">1</div>
+    <h2>Sơ đồ tổng quan — Điều hướng &amp; phân quyền</h2>
+  </div>
+  <div class="diagram-card">
+    <pre class="mermaid">
+flowchart TB
+    Splash["Màn hình khởi động<br/>(Splash)"]:::entry
+    Splash --> AuthCheck{"Đã đăng nhập?"}:::decision
+
+    AuthCheck -- "Chưa" --> Login["Màn hình đăng nhập"]:::main
+    AuthCheck -- "Customer" --> CustomerHome["Tab khách hàng<br/>(Browse · Bookings · Favorites · Profile)"]:::main
+    AuthCheck -- "Management" --> MgmtHome["Tab quản lý<br/>(Schedule · Appointments · Store · Profile)"]:::main
+
+    Login --> Register["Màn hình đăng ký"]:::sec
+    Register --> Login
+    Login -- "Đăng nhập thành công" --> AuthCheck
+
+    CustomerHome -. "Đăng xuất" .-> Login
+    MgmtHome -. "Đăng xuất" .-> Login
+    CustomerHome -. "Chuyển vai trò<br/>(nếu đã có cửa hàng)" .-> MgmtHome
+    MgmtHome -. "Chuyển vai trò" .-> CustomerHome
+
+    classDef entry fill:#2563EB,stroke:#1E40AF,color:#fff,font-weight:bold
+    classDef main fill:#DBEAFE,stroke:#2563EB,color:#1E40AF,font-weight:600
+    classDef sec fill:#fff,stroke:#2563EB,color:#0F172A
+    classDef decision fill:#FEF3C7,stroke:#F59E0B,color:#0F172A
+    </pre>
+  </div>
+  <div class="legend">
+    <span><span class="sw entry"></span> Màn hình khởi động</span>
+    <span><span class="sw main"></span> Trung tâm điều hướng</span>
+    <span><span class="sw sec"></span> Màn hình thường</span>
+    <span><span class="sw action"></span> Quyết định</span>
+  </div>
+</section>
+
+<!-- =================== 2. CUSTOMER & BOOKING =================== -->
+<section class="diagram-section" id="d2">
+  <div class="diagram-title">
+    <div class="num">2</div>
+    <h2>Sơ đồ luồng — Vai trò Khách hàng &amp; Đặt lịch</h2>
+  </div>
+  <div class="diagram-card">
+    <pre class="mermaid">
+flowchart TB
+    Tabs["Tab khách hàng"]:::entry
+
+    Tabs --> Browse["Tìm kiếm &amp; bản đồ<br/>(Browse)"]:::main
+    Tabs --> Bookings["Quản lý đặt lịch<br/>(Bookings)"]:::main
+    Tabs --> Favorites["Yêu thích<br/>(Favorites)"]:::main
+    Tabs --> Profile["Màn hình cá nhân<br/>(Profile)"]:::main
+
+    Browse --> StoreDetail["Chi tiết cửa hàng"]:::sec
+    Favorites --> StoreDetail
+
+    StoreDetail -- "Đặt lịch dịch vụ" --> BookingFlow["Chọn dịch vụ &amp; giờ<br/>/booking/[storeId]"]:::main
+    BookingFlow -- "Xác nhận đặt" --> Confirm["Xác nhận thông tin<br/>&amp; gửi yêu cầu"]:::main
+    Confirm -- "POST /appointments" --> Success["Đặt lịch thành công"]:::main
+    Success --> Bookings
+
+    Bookings --> ApptDetail["Chi tiết lịch hẹn"]:::sec
+    ApptDetail -- "Xem lịch sử / Đánh giá" --> Actions["Hành động"]:::action
+    ApptDetail -- "Huỷ đặt lịch" --> CancelSheet["Bottom sheet<br/>nhập lý do huỷ"]:::action
+
+    Profile --> EditProfile["Sửa hồ sơ"]:::sec
+    Profile -- "Đăng ký cửa hàng" --> Onboarding(["Luồng onboarding<br/>(xem sơ đồ 4)"]):::flow
+    Profile -- "Chuyển vai trò" --> MgmtTabs(["Tab quản lý<br/>(xem sơ đồ 3)"]):::flow
+
+    classDef entry fill:#2563EB,stroke:#1E40AF,color:#fff,font-weight:bold
+    classDef main fill:#DBEAFE,stroke:#2563EB,color:#1E40AF,font-weight:600
+    classDef sec fill:#fff,stroke:#2563EB,color:#0F172A
+    classDef action fill:#FEF3C7,stroke:#F59E0B,color:#0F172A
+    classDef flow fill:#E0F2FE,stroke:#0EA5E9,color:#0C4A6E,font-style:italic
+    </pre>
+  </div>
+  <div class="legend">
+    <span><span class="sw entry"></span> Tab điều hướng</span>
+    <span><span class="sw main"></span> Màn hình chính</span>
+    <span><span class="sw sec"></span> Màn hình con</span>
+    <span><span class="sw action"></span> Bottom sheet / Action</span>
+  </div>
+</section>
+
+<!-- =================== 3. MANAGEMENT =================== -->
+<section class="diagram-section" id="d3">
+  <div class="diagram-title">
+    <div class="num">3</div>
+    <h2>Sơ đồ luồng — Vai trò Quản lý cửa hàng</h2>
+  </div>
+  <div class="diagram-card">
+    <pre class="mermaid">
+flowchart TB
+    Tabs["Tab quản lý"]:::entry
+
+    Tabs --> Schedule["Lưới lịch<br/>(Schedule grid)"]:::main
+    Tabs --> Appts["Danh sách<br/>lịch hẹn"]:::main
+    Tabs --> Store["Cài đặt cửa hàng<br/>(Store hub)"]:::main
+    Tabs --> ProfileM["Hồ sơ<br/>cá nhân"]:::main
+    Tabs --> Scanner["Quét QR<br/>check-in"]:::sec
+    Tabs --> NotifM["Màn hình<br/>thông báo"]:::sec
+
+    Schedule -- "Tap ô trống" --> CreateSheet["Bottom sheet<br/>tạo lịch hẹn"]:::action
+    Schedule -- "Tap lịch hẹn" --> ApptDetailM["Chi tiết<br/>lịch hẹn"]:::sec
+    Schedule -- "Kéo / Resize" --> DragDraft["Draft &amp; xác nhận<br/>(in-place)"]:::action
+
+    Appts --> ApptDetailM
+    ApptDetailM -- "Xem lịch sử<br/>khách hàng" --> UserAppts["Lịch sử lịch hẹn<br/>theo khách"]:::sec
+    UserAppts --> ApptDetailM
+    ApptDetailM -- "Chuyển trạng thái" --> Transition["Booking → Serving<br/>→ Completed / Cancel"]:::action
+
+    Scanner -- "Quét thành công" --> ApptDetailM
+
+    Store --> StoreEdit["Sửa tên<br/>&amp; mô tả"]:::sec
+    Store --> StoreServices["Quản lý<br/>dịch vụ"]:::sec
+    Store --> StoreHours["Giờ mở cửa"]:::sec
+    Store --> StoreLocation["Vị trí<br/>(bản đồ)"]:::sec
+    StoreLocation --> StoreLocationEdit["Sửa vị trí"]:::sec
+    Store --> StoreContact["Liên hệ"]:::sec
+    Store --> StoreReports["Báo cáo<br/>đánh giá xấu"]:::sec
+    Store --> StoreBlocked["Khách bị chặn"]:::sec
+
+    ProfileM -. "Chuyển vai trò" .-> CustTabs(["Tab khách hàng<br/>(xem sơ đồ 2)"]):::flow
+
+    classDef entry fill:#2563EB,stroke:#1E40AF,color:#fff,font-weight:bold
+    classDef main fill:#DBEAFE,stroke:#2563EB,color:#1E40AF,font-weight:600
+    classDef sec fill:#fff,stroke:#2563EB,color:#0F172A
+    classDef action fill:#FEF3C7,stroke:#F59E0B,color:#0F172A
+    classDef flow fill:#E0F2FE,stroke:#0EA5E9,color:#0C4A6E,font-style:italic
+    </pre>
+  </div>
+  <div class="legend">
+    <span><span class="sw entry"></span> Tab điều hướng</span>
+    <span><span class="sw main"></span> Màn hình chính</span>
+    <span><span class="sw sec"></span> Màn hình con</span>
+    <span><span class="sw action"></span> Bottom sheet / Hành động</span>
+  </div>
+</section>
+
+<!-- =================== 4. BUSINESS ONBOARDING =================== -->
+<section class="diagram-section" id="d4">
+  <div class="diagram-title">
+    <div class="num">4</div>
+    <h2>Sơ đồ luồng — Đăng ký cửa hàng (Business Onboarding)</h2>
+  </div>
+  <div class="diagram-card">
+    <pre class="mermaid">
+flowchart LR
+    Profile(["Profile khách hàng"]):::flow
+    Profile --> Intro["Giới thiệu<br/>onboarding"]:::main
+    Intro --> S1["Bước 1<br/>Tên &amp; mô tả<br/>cửa hàng"]:::sec
+    S1 --> S2["Bước 2<br/>Danh mục<br/>dịch vụ"]:::sec
+    S2 --> S3["Bước 3<br/>Khung giờ<br/>(granularity)"]:::sec
+    S3 --> S4["Bước 4<br/>Giờ mở cửa"]:::sec
+    S4 --> S5["Bước 5<br/>Vị trí<br/>(bản đồ)"]:::sec
+    S5 --> Done["Hoàn tất<br/>onboarding"]:::main
+    Done --> MgmtTabs(["Tab quản lý<br/>(xem sơ đồ 3)"]):::flow
+
+    classDef main fill:#DBEAFE,stroke:#2563EB,color:#1E40AF,font-weight:600
+    classDef sec fill:#fff,stroke:#2563EB,color:#0F172A
+    classDef flow fill:#E0F2FE,stroke:#0EA5E9,color:#0C4A6E,font-style:italic
+    </pre>
+  </div>
+  <div class="legend">
+    <span><span class="sw main"></span> Mở đầu / kết thúc</span>
+    <span><span class="sw sec"></span> Bước wizard</span>
+  </div>
+</section>
+
+<footer>
+  App DATN — Đồ án tốt nghiệp · Sơ đồ luồng màn hình · Trường Đại học Nha Trang
+</footer>
+
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'base',
+    themeVariables: {
+      primaryColor: '#DBEAFE',
+      primaryTextColor: '#1E40AF',
+      primaryBorderColor: '#2563EB',
+      lineColor: '#2563EB',
+      secondaryColor: '#FEF3C7',
+      tertiaryColor: '#fff',
+      fontFamily: 'Segoe UI, Inter, system-ui, sans-serif',
+      fontSize: '14px'
+    },
+    flowchart: {
+      curve: 'basis',
+      padding: 20,
+      nodeSpacing: 50,
+      rankSpacing: 60
+    }
+  });
+</script>
+
+</body>
+</html>

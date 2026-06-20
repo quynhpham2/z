@@ -1,0 +1,981 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Đồ án tốt nghiệp — Xây dựng Ứng dụng đặt lịch hẹn </title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<style>
+  :root {
+    --primary: #2563EB;
+    --primary-dark: #1E40AF;
+    --primary-light: #DBEAFE;
+    --ink: #0F172A;
+    --muted: #475569;
+    --line: #E2E8F0;
+    --bg: #F8FAFC;
+    --warn: #F59E0B;
+    --ok: #10B981;
+    --danger: #EF4444;
+  }
+
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    font-family: 'Segoe UI', 'Inter', system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif;
+    background: #0B1220;
+    color: var(--ink);
+    overflow: hidden;
+  }
+
+  .deck { width: 100vw; height: 100vh; display: flex; align-items: center; justify-content: center; }
+  .stage {
+    position: relative;
+    width: min(100vw, calc(100vh * 16 / 9));
+    height: min(100vh, calc(100vw * 9 / 16));
+    background: #fff;
+    box-shadow: 0 30px 80px rgba(0,0,0,.45);
+    overflow: hidden;
+  }
+
+  .slide {
+    position: absolute; inset: 0;
+    padding: 56px 72px;
+    display: none;
+    flex-direction: column;
+    background: #fff;
+    animation: fadeIn .35s ease;
+  }
+  .slide.active { display: flex; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateX(12px); } to { opacity: 1; transform: none; } }
+
+  /* Header (slides 2–11) */
+  .slide-head {
+    display: flex; align-items: baseline; gap: 16px;
+    border-bottom: 3px solid var(--primary);
+    padding-bottom: 14px;
+    margin-bottom: 28px;
+  }
+  .slide-num {
+    font-size: 14px; font-weight: 700;
+    color: #fff; background: var(--primary);
+    padding: 4px 12px; border-radius: 20px;
+    letter-spacing: .5px;
+  }
+  h1.slide-title { font-size: 34px; margin: 0; color: var(--ink); font-weight: 700; }
+  .slide-sub { font-size: 16px; color: var(--muted); margin-left: auto; }
+
+  /* Slide 1 — Title slide (mimics reference layout with primary color) */
+  .title-slide { padding: 0; }
+  .title-band {
+    height: 22%;
+    background: var(--primary);
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 56px;
+  }
+  .title-band .school {
+    color: #fff; text-align: center; flex: 1;
+    font-size: 24px; font-weight: 600; line-height: 1.4;
+  }
+  .logo-circle {
+    width: 96px; height: 96px; border-radius: 50%;
+    background: #fff; display: flex; align-items: center; justify-content: center;
+    font-weight: 800; color: var(--primary); font-size: 12px; text-align: center;
+    box-shadow: 0 4px 16px rgba(0,0,0,.15);
+    flex-direction: column; line-height: 1.1;
+    border: 3px solid #fff;
+  }
+  .logo-circle small { font-size: 9px; color: var(--muted); margin-top: 2px; }
+  .title-body {
+    flex: 1; background: #1E293B; color: #fff;
+    padding: 64px 80px; display: flex; flex-direction: column; justify-content: space-between;
+  }
+  .title-eyebrow { font-size: 22px; font-weight: 600; text-align: center; opacity: .9; }
+  .title-main {
+    font-size: 38px; font-weight: 700; text-align: center;
+    line-height: 1.35; margin: 24px 0;
+  }
+  .title-meta {
+    margin: 0 auto; text-align: center;
+    font-size: 18px; line-height: 1.8;
+  }
+  .title-meta b { color: var(--primary-light); }
+  .title-foot {
+    height: 5%; background: var(--primary);
+  }
+
+  /* Content layout */
+  .content { flex: 1; display: flex; flex-direction: column; gap: 18px; overflow: hidden; }
+  .lead { font-size: 22px; color: var(--ink); line-height: 1.5; font-weight: 500; }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+
+  .card {
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-left: 5px solid var(--primary);
+    border-radius: 10px;
+    padding: 20px 22px;
+  }
+  .card h3 {
+    margin: 0 0 10px; color: var(--primary-dark);
+    font-size: 19px; display: flex; align-items: center; gap: 10px;
+  }
+  .card .icon {
+    width: 32px; height: 32px; border-radius: 8px;
+    background: var(--primary-light); color: var(--primary);
+    display: inline-flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 16px;
+  }
+  .card p, .card ul { margin: 0; color: var(--muted); font-size: 16px; line-height: 1.55; }
+  .card ul { padding-left: 18px; }
+  .card ul li { margin: 4px 0; }
+
+  /* Bulleted lists */
+  ul.bullets { list-style: none; padding: 0; margin: 0; }
+  ul.bullets li {
+    padding: 12px 0 12px 36px; position: relative;
+    font-size: 18px; line-height: 1.5; color: var(--ink);
+    border-bottom: 1px dashed var(--line);
+  }
+  ul.bullets li:last-child { border-bottom: 0; }
+  ul.bullets li::before {
+    content: "▸";
+    position: absolute; left: 12px; top: 11px;
+    color: var(--primary); font-weight: 700; font-size: 20px;
+  }
+  ul.bullets li b { color: var(--primary-dark); }
+
+  /* Architecture diagram */
+  .arch {
+    display: flex; flex-direction: column; gap: 12px;
+    background: var(--bg); border: 1px solid var(--line); border-radius: 12px;
+    padding: 20px;
+  }
+  .arch-row { display: flex; gap: 12px; align-items: stretch; }
+  .arch-row.label { font-size: 13px; font-weight: 700; color: var(--primary); text-transform: uppercase; letter-spacing: 1px; }
+  .arch-box {
+    flex: 1; background: #fff; border: 2px solid var(--primary);
+    color: var(--ink); border-radius: 8px;
+    padding: 12px; text-align: center;
+    font-size: 14px; font-weight: 600;
+  }
+  .arch-box.fill { background: var(--primary); color: #fff; }
+  .arch-box.soft { background: var(--primary-light); color: var(--primary-dark); border-color: var(--primary-light); }
+  .arch-box small { display: block; font-weight: 400; font-size: 11px; margin-top: 2px; opacity: .85; }
+  .arch-arrow {
+    text-align: center; color: var(--primary); font-size: 18px;
+  }
+
+  /* Mermaid container */
+  .mermaid-wrap {
+    flex: 1;
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 14px;
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden;
+  }
+  .mermaid-wrap .mermaid { width: 100%; text-align: center; }
+  .mermaid-wrap .mermaid svg { max-width: 100%; max-height: 100%; height: auto; }
+  .mermaid-wrap .mermaid img {
+    width: 32px !important; height: 32px !important;
+    display: inline-block; vertical-align: middle;
+    object-fit: contain;
+  }
+
+  /* Stats */
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  .stat {
+    background: var(--primary); color: #fff; border-radius: 12px;
+    padding: 18px; text-align: center;
+  }
+  .stat .num { font-size: 36px; font-weight: 800; line-height: 1; }
+  .stat .lbl { font-size: 13px; margin-top: 6px; opacity: .9; }
+
+  /* Comparison table */
+  table {
+    width: 100%; border-collapse: collapse; font-size: 15px;
+    background: #fff; border-radius: 10px; overflow: hidden;
+    box-shadow: 0 2px 10px rgba(0,0,0,.04);
+  }
+  th, td { padding: 12px 16px; text-align: left; border-bottom: 1px solid var(--line); }
+  th { background: var(--primary); color: #fff; font-weight: 600; }
+  tr:last-child td { border-bottom: 0; }
+  td.check { color: var(--ok); font-weight: 700; text-align: center; }
+  td.cross { color: var(--danger); font-weight: 700; text-align: center; }
+
+  /* Demo screenshots */
+  .shots {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px;
+    flex: 1; min-height: 0;
+  }
+  .shots.three { grid-template-columns: repeat(3, 1fr); max-width: 78%; margin: 0 auto; width: 100%; }
+  .shot {
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    display: flex; flex-direction: column; gap: 8px;
+    padding: 10px;
+    min-height: 0;
+  }
+  .shot .frame {
+    flex: 1; min-height: 0;
+    background: #1E293B;
+    border-radius: 16px;
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden;
+    padding: 6px;
+  }
+  .shot .frame img {
+    max-width: 100%; max-height: 100%;
+    object-fit: contain;
+    border-radius: 12px;
+  }
+  .shot .cap {
+    font-size: 13px; font-weight: 600; color: var(--primary-dark);
+    text-align: center; line-height: 1.35;
+    padding: 4px 0 2px;
+  }
+  .shot .cap small { display: block; font-weight: 400; color: var(--muted); font-size: 11px; }
+
+  /* Closing */
+  .closing {
+    flex: 1;
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column; text-align: center; gap: 24px;
+  }
+  .closing h2 {
+    font-size: 72px; margin: 0;
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    font-weight: 800;
+  }
+  .closing p { font-size: 22px; color: var(--muted); margin: 0; max-width: 700px; }
+  .closing .contact {
+    margin-top: 12px; padding: 16px 28px;
+    background: var(--primary-light); color: var(--primary-dark);
+    border-radius: 10px; font-size: 16px;
+  }
+
+  /* Slide footer */
+  .slide-foot {
+    position: absolute; left: 72px; right: 72px; bottom: 22px;
+    display: flex; justify-content: space-between; align-items: center;
+    color: var(--muted); font-size: 13px;
+    border-top: 1px solid var(--line); padding-top: 10px;
+  }
+  .slide-foot .brand { color: var(--primary); font-weight: 700; }
+
+  /* Nav controls */
+  .nav {
+    position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%);
+    display: flex; gap: 8px; align-items: center;
+    background: rgba(15,23,42,.75); backdrop-filter: blur(8px);
+    padding: 6px 10px; border-radius: 999px;
+    color: #fff; font-size: 13px; z-index: 10;
+  }
+  .nav button {
+    background: var(--primary); color: #fff; border: 0;
+    width: 32px; height: 32px; border-radius: 50%;
+    cursor: pointer; font-size: 14px; font-weight: 700;
+  }
+  .nav button:hover { background: var(--primary-dark); }
+  .nav .count { padding: 0 10px; font-variant-numeric: tabular-nums; }
+
+  /* Print */
+  @media print {
+    html, body { background: #fff; overflow: visible; }
+    .deck { display: block; height: auto; }
+    .stage { box-shadow: none; width: 100%; height: auto; }
+    .slide { display: flex !important; page-break-after: always; position: relative; height: 56.25vw; }
+    .nav { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="deck">
+  <div class="stage" id="stage">
+
+    <!-- SLIDE 1: Title -->
+    <section class="slide title-slide active">
+      <div class="title-band">
+        <div class="logo-circle" style="padding: 4px; overflow: hidden; background: #fff; border: 3px solid #fff;"><img src="images/ntulogo.png" style="width: 100%; height: 100%; object-fit: contain;" alt="NTU Logo" /></div>
+        <div class="school">
+          Trường Đại học Nha Trang<br>
+          Khoa Công nghệ Thông tin
+        </div>
+        <div style="width: 96px;"></div> <!-- Spacer to keep school name centered -->
+      </div>
+      <div class="title-body">
+        <div class="title-eyebrow">Đồ án tốt nghiệp</div>
+        <div class="title-main">
+          Xây dựng ứng dụng đặt lịch hẹn<br>
+      
+        </div>
+        <div class="title-meta">
+          <div><b>GVHD:</b> ThS. Huỳnh Tuấn Anh </div>
+          <div><b>SVTH:</b>Phạm Gia Quỳnh </div>
+          <div><b>MSSV:</b> 64132022</div>
+        </div>
+      </div>
+      <div class="title-foot"></div>
+    </section>
+
+    <!-- SLIDE 2: Vấn đề & Động lực -->
+    <section class="slide">
+      <div class="slide-head">
+        <span class="slide-num">02</span>
+        <h1 class="slide-title">Vấn đề &amp; Lý do chọn đề tài</h1>
+        <span class="slide-sub">Problem &amp; Motivation</span>
+      </div>
+      <div class="content">
+        <p class="lead" style="margin:0; font-size:20px; line-height:1.55; color:var(--ink); font-weight:500;">
+          Việc quản lý đặt lịch dịch vụ (spa, salon, thú cưng…) tại Việt Nam phần lớn vẫn được thực hiện <b>thủ công</b> qua điện thoại, tin nhắn hoặc giấy tờ.
+        </p>
+
+        <div class="grid-3" style="flex:1; align-items:stretch; gap:24px;">
+
+          <!-- Card 1: Customer pain -->
+          <div style="background:linear-gradient(180deg, #FEF2F2 0%, #fff 70%); border:1px solid #FECACA; border-top:5px solid var(--danger); border-radius:14px; padding:24px 22px; display:flex; flex-direction:column; gap:14px; box-shadow:0 4px 14px rgba(0,0,0,.05);">
+            <div style="display:flex; align-items:center; gap:14px;">
+              <div style="width:52px; height:52px; border-radius:50%; background:var(--danger); color:#fff; display:flex; align-items:center; justify-content:center; font-size:24px; font-weight:800; box-shadow:0 4px 12px rgba(239,68,68,.35);">01</div>
+              <div style="font-size:11px; font-weight:700; color:var(--danger); text-transform:uppercase; letter-spacing:1.2px;">Phía khách hàng</div>
+            </div>
+            <h3 style="margin:0; font-size:19px; color:var(--ink); font-weight:700; line-height:1.3;">Trải nghiệm còn nhiều hạn chế</h3>
+            <p style="margin:0; font-size:15px; color:var(--muted); line-height:1.6;">Phải <b>gọi điện hoặc nhắn tin thủ công</b> để xác nhận lịch hẹn, không biết khung giờ trống, và khó tra cứu lịch sử dịch vụ cá nhân.</p>
+          </div>
+
+          <!-- Card 2: Owner pain -->
+          <div style="background:linear-gradient(180deg, #FEF2F2 0%, #fff 70%); border:1px solid #FECACA; border-top:5px solid var(--danger); border-radius:14px; padding:24px 22px; display:flex; flex-direction:column; gap:14px; box-shadow:0 4px 14px rgba(0,0,0,.05);">
+            <div style="display:flex; align-items:center; gap:14px;">
+              <div style="width:52px; height:52px; border-radius:50%; background:var(--danger); color:#fff; display:flex; align-items:center; justify-content:center; font-size:24px; font-weight:800; box-shadow:0 4px 12px rgba(239,68,68,.35);">02</div>
+              <div style="font-size:11px; font-weight:700; color:var(--danger); text-transform:uppercase; letter-spacing:1.2px;">Phía chủ cửa hàng</div>
+            </div>
+            <h3 style="margin:0; font-size:19px; color:var(--ink); font-weight:700; line-height:1.3;">Vận hành khó kiểm soát</h3>
+            <p style="margin:0; font-size:15px; color:var(--muted); line-height:1.6;">Dễ <b>trùng lịch</b>, thiếu nhân lực; lưu trữ rời rạc trên sổ tay hoặc Excel, <b>không có cảnh báo real-time</b> khi có thay đổi.</p>
+          </div>
+
+          <!-- Card 3: Existing solutions gap -->
+          <div style="background:linear-gradient(180deg, #FFFBEB 0%, #fff 70%); border:1px solid #FDE68A; border-top:5px solid var(--warn); border-radius:14px; padding:24px 22px; display:flex; flex-direction:column; gap:14px; box-shadow:0 4px 14px rgba(0,0,0,.05);">
+            <div style="display:flex; align-items:center; gap:14px;">
+              <div style="width:52px; height:52px; border-radius:50%; background:var(--warn); color:#fff; display:flex; align-items:center; justify-content:center; font-size:24px; font-weight:800; box-shadow:0 4px 12px rgba(245,158,11,.35);">03</div>
+              <div style="font-size:11px; font-weight:700; color:var(--warn); text-transform:uppercase; letter-spacing:1.2px;">Giải pháp hiện có</div>
+            </div>
+            <h3 style="margin:0; font-size:19px; color:var(--ink); font-weight:700; line-height:1.3;">Chưa đáp ứng thị trường VN</h3>
+            <p style="margin:0; font-size:15px; color:var(--muted); line-height:1.6;">App nước ngoài (<b>Booksy, Fresha</b>) phí cao, chưa Việt hoá; Google Form / Chatbot <b>thiếu quản lý trạng thái</b> real-time.</p>
+          </div>
+
+        </div>
+      </div>
+      <div class="slide-foot"><span>App DATN — Đồ án tốt nghiệp</span><span class="brand">2 / 16</span></div>
+    </section>
+
+    <!-- SLIDE 3: Mục tiêu & Phạm vi -->
+    <section class="slide">
+      <div class="slide-head">
+        <span class="slide-num">03</span>
+        <h1 class="slide-title">Mục tiêu nguyên cứu</h1>
+        <span class="slide-sub">Objectives &amp; Scope</span>
+      </div>
+      <div class="content">
+        <div class="grid-2">
+          <div>
+            <h3 style="color:var(--primary-dark);margin-top:0">Mục tiêu chính</h3>
+            <ul class="bullets">
+              <li><b>Xây dựng ứng dụng di động</b> hỗ trợ 2 vai trò: khách hàng &amp; chủ cửa hàng</li>
+              <li><b>Quản lý lịch hẹn trực quan</b> theo dạng lưới giống Google Calendar</li>
+              <li><b>Luồng đặt lịch end-to-end</b> từ tìm kiếm đến hoàn tất dịch vụ</li>
+              <li><b>Thông báo &amp; trạng thái</b> đồng bộ giữa hai phía</li>
+            </ul>
+          </div>
+          <div>
+            <h3 style="color:var(--primary-dark);margin-top:0">Ý tưởng cốt lõi (Concept)</h3>
+            <ul class="bullets">
+              <li><b>Chủ doanh nghiệp nhỏ:</b> Tránh quản lý phức tạp trên máy tính , tận dụng app di động tiện lợi để quản lý và tổng hợp mọi lịch hẹn.</li>
+              <li><b>Khách hàng:</b> Tìm kiếm, khám phá các dịch vụ xung quanh vị trí hiện tại và dễ dàng đặt lịch, quản lý lịch cá nhân.</li>
+              <li><b>Mô hình tham chiếu:</b> Tích hợp trải nghiệm tìm kiếm &amp; đặt chỗ tương tự <b>Google Maps, Airbnb, Booksy</b>.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="slide-foot"><span>App DATN — Đồ án tốt nghiệp</span><span class="brand">3 / 16</span></div>
+    </section>
+
+    <!-- SLIDE 4: Nghiên cứu liên quan -->
+    <section class="slide">
+      <div class="slide-head">
+        <span class="slide-num">04</span>
+        <h1 class="slide-title">Nghiên cứu liên quan</h1>
+        <span class="slide-sub">Related Work</span>
+      </div>
+      <div class="content">
+        <p class="lead">Các app hiện có chủ yếu nhắm vào salon/spa chuyên nghiệp ở thị trường nước ngoài. Đề tài tập trung ngách <b>hộ kinh doanh nhỏ &amp; dịch vụ địa phương tại Việt Nam</b> — chủ cửa hàng cần công cụ <b>mobile-first</b>, miễn phí, đa dịch vụ trong một cửa hàng.</p>
+        <table>
+          <thead>
+            <tr>
+              <th>Tiêu chí</th>
+              <th>Booksy</th>
+              <th>Fresha</th>
+              <th>GoBeauty</th>
+              <th>App DATN</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Hướng tới hộ kinh doanh nhỏ VN</td><td class="cross">✗</td><td class="cross">✗</td><td class="cross">✗</td><td class="check">✓</td></tr>
+            <tr><td>Hỗ trợ tiếng Việt &amp; dịch vụ địa phương</td><td class="cross">✗</td><td class="cross">✗</td><td class="check">✓</td><td class="check">✓</td></tr>
+            <tr><td>Quản lý nhiều dịch vụ / 1 cửa hàng</td><td class="check">✓</td><td class="check">✓</td><td class="check">✓</td><td class="check">✓</td></tr>
+            <tr><td>Lưới lịch kéo–thả trên mobile</td><td class="cross">✗</td><td class="cross">✗</td><td class="cross">✗</td><td class="check">✓</td></tr>
+            <tr><td>QR check-in tại cửa hàng</td><td class="cross">✗</td><td class="cross">✗</td><td class="cross">✗</td><td class="check">✓</td></tr>
+            <tr><td>Miễn phí hoàn toàn cho chủ cửa hàng</td><td class="cross">✗</td><td class="check">✓</td><td class="cross">✗</td><td class="check">✓</td></tr>
+            <tr><td>Bản đồ &amp; tìm kiếm theo vị trí</td><td class="check">✓</td><td class="check">✓</td><td class="cross">✗</td><td class="check">✓</td></tr>
+          </tbody>
+        </table>
+        <p style="font-size:15px;color:var(--muted);margin:8px 0 0">→ Định vị: giống cách <b>Airbnb</b> giúp cá nhân cho thuê nhà, <b>Shopee</b> giúp shop nhỏ bán hàng — đề tài giúp <b>hộ kinh doanh nhỏ</b> quản lý lịch hẹn ngay trên điện thoại, không cần PC.</p>
+      </div>
+      <div class="slide-foot"><span>App DATN — Đồ án tốt nghiệp</span><span class="brand">4 / 16</span></div>
+    </section>
+
+    <!-- SLIDE 5: Kiến trúc hệ thống -->
+    <section class="slide">
+      <div class="slide-head">
+        <span class="slide-num">05</span>
+        <h1 class="slide-title">Kiến trúc hệ thống</h1>
+        <span class="slide-sub">System Architecture</span>
+      </div>
+      <div class="content">
+        <div class="mermaid-wrap">
+          <img src="images/diagram-architecture.png" alt="Kiến trúc hệ thống" style="max-width:100%; max-height:100%; object-fit:contain;" />
+        </div>
+        <template data-archived="mermaid-source">
+          <pre class="mermaid">
+flowchart TB
+    subgraph Clients["Tier 1 — Clients (Frontend)"]
+        direction LR
+        MobileC["<img src='https://cdn.simpleicons.org/expo/000020'/><br/><b>Mobile · Khách hàng</b><br/><i>React Native + Expo</i>"]
+        MobileM["<img src='https://cdn.simpleicons.org/expo/000020'/><br/><b>Mobile · Quản lý cửa hàng</b><br/><i>React Native + Expo</i>"]
+        Web["<img src='https://cdn.simpleicons.org/react/61DAFB'/><br/><b>Web Admin</b><br/><i>React + Vite</i>"]
+    end
+
+    API["<img src='https://cdn.simpleicons.org/nestjs/E0234E'/><br/><b>NestJS REST API</b><br/><i>Node.js · TypeScript</i>"]
+
+    DB["<img src='https://cdn.simpleicons.org/postgresql/4169E1'/><br/><b>PostgreSQL</b>"]
+
+    subgraph External["Dịch vụ ngoài (External Services)"]
+        direction LR
+        FCM["<img src='https://cdn.simpleicons.org/firebase/FFCA28'/><br/><b>Firebase FCM</b>"]
+        FBAuth["<img src='https://cdn.simpleicons.org/firebase/FFCA28'/><br/><b>Firebase Auth</b>"]
+    end
+
+    MobileC -- "HTTPS REST" --> API
+    MobileM -- "HTTPS REST" --> API
+    Web -- "HTTPS REST" --> API
+    MobileC -. "Verify token" .-> FBAuth
+    MobileM -. "Verify token" .-> FBAuth
+
+    API == "TypeORM" ==> DB
+    API -- "Send push" --> FCM
+    API -- "Validate JWT" --> FBAuth
+
+    classDef client fill:#DBEAFE,stroke:#2563EB,color:#1E40AF,font-weight:600
+    classDef backend fill:#2563EB,stroke:#1E40AF,color:#fff,font-weight:bold
+    classDef db fill:#1E293B,stroke:#0F172A,color:#fff,font-weight:bold
+    classDef ext fill:#fff,stroke:#2563EB,color:#0F172A
+    class MobileC,MobileM,Web client
+    class API backend
+    class DB db
+    class FCM,FBAuth ext
+          </pre>
+        </template>
+        <p style="font-size:14px;color:var(--muted);margin:0">Backend triển khai trên <b>Render / Railway / VPS</b>. Tất cả giao tiếp qua <b>HTTPS</b>; xác thực bằng <b>JWT</b> phát hành từ Firebase Auth.</p>
+      </div>
+      <div class="slide-foot"><span>App DATN — Đồ án tốt nghiệp</span><span class="brand">5 / 16</span></div>
+    </section>
+
+    <!-- SLIDE 6: Sơ đồ luồng - Tổng quan & Đăng ký cửa hàng -->
+    <section class="slide">
+      <div class="slide-head">
+        <span class="slide-num">06</span>
+        <h1 class="slide-title">Sơ đồ luồng - Tổng quan &amp; Đăng ký</h1>
+        <span class="slide-sub">Overview &amp; Onboarding Flow</span>
+      </div>
+      <div class="content" style="display: flex; flex-direction: column; gap: 16px; justify-content: center;">
+        <div style="display: flex; flex-direction: column;">
+          <h3 style="margin:0 0 5px; font-size: 15px; color: var(--primary);">1. Tổng quan điều hướng (Overview Flow)</h3>
+          <div class="mermaid-wrap" style="height: 165px; background: rgba(0,0,0,0.015); border-radius: 6px; display: flex; align-items: center; justify-content: center;">
+            <img src="images/diagram-overview-flow.png" alt="Sơ đồ luồng tổng quan" style="max-width:100%; max-height:100%; object-fit:contain;" />
+          </div>
+          <template data-archived="mermaid-source">
+            <pre class="mermaid">
+flowchart LR
+    Splash["Khởi động (Splash)"]:::entry
+    Login["Đăng nhập / Đăng ký"]:::sec
+    CustomerHome["Tab khách hàng (Khám phá · Đặt lịch · Cá nhân)"]:::main
+    MgmtHome["Tab quản lý (Lưới lịch · Lịch hẹn · Cài đặt)"]:::main
+
+    Splash --> Login
+    Splash -- "Khách vãng lai" --> CustomerHome
+    Login -- "Khách hàng" --> CustomerHome
+    Login -- "Quản lý" --> MgmtHome
+    CustomerHome <--> MgmtHome
+
+    classDef entry fill:#2563EB,stroke:#1E40AF,color:#fff,font-weight:bold
+    classDef main fill:#DBEAFE,stroke:#2563EB,color:#1E40AF,font-weight:600
+    classDef sec fill:#fff,stroke:#2563EB,color:#0F172A
+            </pre>
+          </template>
+        </div>
+        <div style="display: flex; flex-direction: column;">
+          <h3 style="margin:0 0 5px; font-size: 15px; color: var(--primary);">2. Đăng ký cửa hàng (Business Onboarding)</h3>
+          <div class="mermaid-wrap" style="height: 165px; background: rgba(0,0,0,0.015); border-radius: 6px; display: flex; align-items: center; justify-content: center;">
+            <img src="images/diagram-onboarding-flow.png" alt="Sơ đồ luồng onboarding cửa hàng" style="max-width:100%; max-height:100%; object-fit:contain;" />
+          </div>
+          <template data-archived="mermaid-source">
+            <pre class="mermaid">
+flowchart LR
+    Profile(["Profile khách hàng"]):::flow
+    Intro["Giới thiệu"]:::main
+    S1["B1: Tên &amp; mô tả"]:::sec
+    S2["B2: Dịch vụ"]:::sec
+    S3["B3: Khung giờ"]:::sec
+    S4["B4: Giờ mở cửa"]:::sec
+    S5["B5: Vị trí"]:::sec
+    Done["Hoàn tất"]:::main
+    MgmtTabs(["Tab quản lý"]):::flow
+
+    Profile --> Intro --> S1 --> S2 --> S3 --> S4 --> S5 --> Done --> MgmtTabs
+
+    classDef main fill:#DBEAFE,stroke:#2563EB,color:#1E40AF,font-weight:600
+    classDef sec fill:#fff,stroke:#2563EB,color:#0F172A
+    classDef flow fill:#E0F2FE,stroke:#0EA5E9,color:#0C4A6E,font-style:italic
+            </pre>
+          </template>
+        </div>
+      </div>
+      <div class="slide-foot"><span>App DATN — Đồ án tốt nghiệp</span><span class="brand">6 / 16</span></div>
+    </section>
+
+    <!-- SLIDE 7: Sơ đồ luồng - Khách hàng & Đặt lịch -->
+    <section class="slide">
+      <div class="slide-head">
+        <span class="slide-num">07</span>
+        <h1 class="slide-title">Sơ đồ luồng - Khách hàng &amp; Đặt lịch</h1>
+        <span class="slide-sub">Customer &amp; Booking Flow</span>
+      </div>
+      <div class="content">
+        <div class="mermaid-wrap">
+          <img src="images/diagram-customer-flow.png" alt="Sơ đồ luồng khách hàng" style="max-width:100%; max-height:100%; object-fit:contain;" />
+        </div>
+        <template data-archived="mermaid-source">
+          <pre class="mermaid">
+flowchart LR
+    Tabs["Tab khách hàng"]:::entry
+
+    Tabs --> Browse["Tìm kiếm &amp; bản đồ (Browse)"]:::main
+    Tabs --> Bookings["Quản lý đặt lịch (Bookings)"]:::main
+    Tabs --> Favorites["Yêu thích (Favorites)"]:::main
+    Tabs --> Profile["Màn hình cá nhân (Profile)"]:::main
+
+    Browse --> StoreDetail["Chi tiết cửa hàng"]:::sec
+    Favorites --> StoreDetail
+
+    StoreDetail -- "Đặt lịch dịch vụ" --> BookingFlow["Chọn dịch vụ &amp; giờ<br/> đặt lịch"]:::main
+    BookingFlow --> Bookings
+
+    Bookings --> ApptDetail["Chi tiết lịch hẹn"]:::sec
+    ApptDetail -- "Xem lịch sử / Đánh giá" --> Actions["Hành động"]:::action
+    ApptDetail -- "Huỷ đặt lịch" --> CancelSheet["Bottom sheet<br/>nhập lý do huỷ"]:::action
+
+    Profile --> EditProfile["Sửa hồ sơ"]:::sec
+    Profile -- "Đăng ký cửa hàng" --> Onboarding(["Luồng onboarding"]):::flow
+    Profile -- "Chuyển vai trò" --> MgmtTabs(["Tab quản lý"]):::flow
+
+    classDef entry fill:#2563EB,stroke:#1E40AF,color:#fff,font-weight:bold
+    classDef main fill:#DBEAFE,stroke:#2563EB,color:#1E40AF,font-weight:600
+    classDef sec fill:#fff,stroke:#2563EB,color:#0F172A
+    classDef action fill:#FEF3C7,stroke:#F59E0B,color:#0F172A
+    classDef flow fill:#E0F2FE,stroke:#0EA5E9,color:#0C4A6E,font-style:italic
+          </pre>
+        </template>
+      </div>
+      <div class="slide-foot"><span>App DATN — Đồ án tốt nghiệp</span><span class="brand">7 / 16</span></div>
+    </section>
+
+    <!-- SLIDE 8: Sơ đồ luồng - Quản lý cửa hàng -->
+    <section class="slide">
+      <div class="slide-head">
+        <span class="slide-num">08</span>
+        <h1 class="slide-title">Sơ đồ luồng - Quản lý cửa hàng</h1>
+        <span class="slide-sub">Store Management Flow</span>
+      </div>
+      <div class="content">
+        <div class="mermaid-wrap">
+          <img src="images/diagram-management-flow.png" alt="Sơ đồ luồng quản lý cửa hàng" style="max-width:100%; max-height:100%; object-fit:contain;" />
+        </div>
+        <template data-archived="mermaid-source">
+          <pre class="mermaid">
+flowchart LR
+    Tabs["Tab quản lý"]:::entry
+
+    Tabs --> Schedule["Lưới lịch (Schedule grid)"]:::main
+    Tabs --> Appts["Danh sách lịch hẹn"]:::main
+    Tabs --> Store["Cài đặt cửa hàng (Store hub)"]:::main
+    Tabs --> ProfileM["Hồ sơ cá nhân"]:::main
+    Tabs --> Scanner["Quét QR check-in"]:::sec
+
+    Schedule -- "Tap ô trống" --> CreateSheet["Bottom sheet tạo lịch"]:::action
+    Schedule -- "Tap lịch hẹn" --> ApptDetailM["Chi tiết lịch hẹn"]:::sec
+    Schedule -- "Kéo / Resize" --> DragDraft["Xác nhận thay đổi"]:::action
+
+    Appts --> ApptDetailM
+    ApptDetailM -- "Chuyển trạng thái" --> Transition["Booking → Serving → Completed / Cancel"]:::action
+
+    Scanner -- "Quét thành công" --> ApptDetailM
+
+    Store --> StoreEdit["Sửa thông tin"]:::sec
+    Store --> StoreServices["Quản lý dịch vụ"]:::sec
+    Store --> StoreHours["Giờ mở cửa"]:::sec
+    Store --> StoreLocation["Vị trí bản đồ"]:::sec
+
+    classDef entry fill:#2563EB,stroke:#1E40AF,color:#fff,font-weight:bold
+    classDef main fill:#DBEAFE,stroke:#2563EB,color:#1E40AF,font-weight:600
+    classDef sec fill:#fff,stroke:#2563EB,color:#0F172A
+    classDef action fill:#FEF3C7,stroke:#F59E0B,color:#0F172A
+          </pre>
+        </template>
+      </div>
+      <div class="slide-foot"><span>App DATN — Đồ án tốt nghiệp</span><span class="brand">8 / 16</span></div>
+    </section>
+
+    <!-- SLIDE 9: Điểm nổi bật triển khai -->
+    <section class="slide">
+      <div class="slide-head">
+        <span class="slide-num">09</span>
+        <h1 class="slide-title">Khó khăn gặp phải</h1>
+        <span class="slide-sub">Implementation Highlights</span>
+      </div>
+      <div class="content">
+        <p class="lead" style="margin:0 0 6px;">6 khó khăn kỹ thuật trọng tâm gặp phải khi triển khai.</p>
+        <ul style="list-style:none; padding:0; margin:0; font-size:16.5px; line-height:1.6; color:var(--ink); flex:1; min-height:0;">
+
+          <li style="padding:14px 0 14px 38px; position:relative; border-bottom:1px dashed var(--line);">
+            <span style="position:absolute; left:0; top:14px; color:#fff; background:var(--primary); width:26px; height:26px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:13px; font-weight:800;">1</span>
+            <b style="color:var(--primary-dark);">Tag &amp; Filter — phân loại ngành đa cấp.</b>
+            <span style="color:var(--muted);"> Junction table <code>store_tags</code> với composite index, QueryBuilder ghép động <code>andWhere</code> để tránh N+1 query.</span>
+          </li>
+
+          <li style="padding:14px 0 14px 38px; position:relative; border-bottom:1px dashed var(--line);">
+            <span style="position:absolute; left:0; top:14px; color:#fff; background:var(--primary); width:26px; height:26px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:13px; font-weight:800;">2</span>
+            <b style="color:var(--primary-dark);">RBAC &amp; Authorization — chống OWASP A01 / IDOR.</b>
+            <span style="color:var(--muted);"> NestJS <code>@Roles()</code> + <code>RolesGuard</code> đọc JWT claim, kèm resource-level check ở service layer.</span>
+          </li>
+
+          <li style="padding:14px 0 14px 38px; position:relative; border-bottom:1px dashed var(--line);">
+            <span style="position:absolute; left:0; top:14px; color:#fff; background:var(--primary); width:26px; height:26px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:13px; font-weight:800;">3</span>
+            <b style="color:var(--primary-dark);">Race condition — double-booking &amp; multi-edit cùng lịch hẹn.</b>
+            <span style="color:var(--muted);"> <b>Optimistic locking</b> ở backend: cột <code>version</code>, <code>UPDATE … WHERE version = ?</code>; mismatch → <code>409 Conflict</code>, client refetch &amp; merge.</span>
+          </li>
+
+          <li style="padding:14px 0 14px 38px; position:relative; border-bottom:1px dashed var(--line);">
+            <span style="position:absolute; left:0; top:14px; color:#fff; background:var(--primary); width:26px; height:26px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:13px; font-weight:800;">4</span>
+            <b style="color:var(--primary-dark);">Review &amp; booking spam abuse — bóp méo uy tín, DoS slot.</b>
+            <span style="color:var(--muted);"> Review chỉ tạo từ booking <code>completed</code>, rate-limit per user/IP, report &amp; moderation queue cho admin.</span>
+          </li>
+
+          <li style="padding:14px 0 14px 38px; position:relative; border-bottom:1px dashed var(--line);">
+            <span style="position:absolute; left:0; top:14px; color:#fff; background:var(--primary); width:26px; height:26px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:13px; font-weight:800;">5</span>
+            <b style="color:var(--primary-dark);">Map Integration Layer — geo / reverse-geo, rate-limit quota.</b>
+            <span style="color:var(--muted);"> Adapter wrap <code>expo-location</code>, debounce 400ms + LRU cache, lưu cả <code>lat/lng</code> &amp; <code>formatted_address</code>.</span>
+          </li>
+
+          <li style="padding:14px 0 14px 38px; position:relative;">
+            <span style="position:absolute; left:0; top:14px; color:#fff; background:var(--primary); width:26px; height:26px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:13px; font-weight:800;">6</span>
+            <b style="color:var(--primary-dark);">Schedule Grid kéo–thả — gesture conflict &amp; render performance.</b>
+            <span style="color:var(--muted);"> <code>react-native-gesture-handler</code> simultaneous resolution, snap-to-grid 15 phút, memoization, optimistic UI + rollback.</span>
+          </li>
+
+        </ul>
+      </div>
+      <div class="slide-foot"><span>App DATN — Đồ án tốt nghiệp</span><span class="brand">9 / 16</span></div>
+    </section>
+
+    <!-- SLIDE 10: Demo (1/3) — Khám phá &amp; Đặt lịch -->
+    <section class="slide">
+      <div class="slide-head">
+        <span class="slide-num">10</span>
+        <h1 class="slide-title">Demo — Khám phá &amp; Đặt lịch</h1>
+        <span class="slide-sub">Customer · Discovery &amp; Booking (1/3)</span>
+      </div>
+      <div class="content">
+        <div class="shots">
+          <div class="shot">
+            <div class="frame"><img src="images/browse-list.png" alt="Browse cửa hàng" /></div>
+            <div class="cap">1. Khám phá &amp; lọc theo ngành</div>
+          </div>
+          <div class="shot">
+            <div class="frame"><img src="images/browse-map.png" alt="Bản đồ cửa hàng" /></div>
+            <div class="cap">2. Bản đồ tìm cửa hàng</div>
+          </div>
+          <div class="shot">
+            <div class="frame"><img src="images/store-detail.png" alt="Chi tiết cửa hàng" /></div>
+            <div class="cap">3. Chi tiết &amp; danh sách dịch vụ</div>
+          </div>
+          <div class="shot">
+            <div class="frame"><img src="images/booking-time.png" alt="Chọn khung giờ" /></div>
+            <div class="cap">4. Chọn khung giờ &amp; liên hệ</div>
+          </div>
+        </div>
+      </div>
+      <div class="slide-foot"><span>App DATN — Đồ án tốt nghiệp</span><span class="brand">10 / 16</span></div>
+    </section>
+
+    <!-- SLIDE 11: Demo (2/3) — Sau khi đặt lịch -->
+    <section class="slide">
+      <div class="slide-head">
+        <span class="slide-num">11</span>
+        <h1 class="slide-title">Demo — Sau khi đặt lịch</h1>
+        <span class="slide-sub">Customer · Post-booking lifecycle (2/3)</span>
+      </div>
+      <div class="content">
+        <div class="shots">
+          <div class="shot">
+            <div class="frame"><img src="images/my-bookings.png" alt="Lịch hẹn của tôi" /></div>
+            <div class="cap">5. Lịch hẹn của tôi (calendar)</div>
+          </div>
+          <div class="shot">
+            <div class="frame"><img src="images/appt-qr.png" alt="QR check-in" /></div>
+            <div class="cap">6. Chi tiết lịch hẹn + QR</div>
+          </div>
+          <div class="shot">
+            <div class="frame"><img src="images/reviews.png" alt="Đánh giá" /></div>
+            <div class="cap">7. Đánh giá cửa hàng</div>
+          </div>
+          <div class="shot">
+            <div class="frame"><img src="images/onboarding-step1.png" alt="Đăng ký cửa hàng" /></div>
+            <div class="cap">8. Đăng ký mở cửa hàng</div>
+          </div>
+        </div>
+      </div>
+      <div class="slide-foot"><span>App DATN — Đồ án tốt nghiệp</span><span class="brand">11 / 16</span></div>
+    </section>
+
+    <!-- SLIDE 12: Demo (3/3) — Quản lý cửa hàng -->
+    <section class="slide">
+      <div class="slide-head">
+        <span class="slide-num">12</span>
+        <h1 class="slide-title">Demo — Vai trò chủ cửa hàng</h1>
+        <span class="slide-sub">Management · Owner workspace (3/3)</span>
+      </div>
+      <div class="content">
+        <div class="shots three">
+          <div class="shot">
+            <div class="frame"><img src="images/schedule-grid.png" alt="Schedule grid" /></div>
+            <div class="cap">9. Lưới lịch kéo–thả</div>
+          </div>
+          <div class="shot">
+            <div class="frame"><img src="images/mgmt-appt-detail.png" alt="Chi tiết lịch hẹn" /></div>
+            <div class="cap">10. Chi tiết &amp; chuyển trạng thái</div>
+          </div>
+          <div class="shot">
+            <div class="frame"><img src="images/store-settings.png" alt="Cài đặt cửa hàng" /></div>
+            <div class="cap">11. Trung tâm cài đặt cửa hàng</div>
+          </div>
+        </div>
+      </div>
+      <div class="slide-foot"><span>App DATN — Đồ án tốt nghiệp</span><span class="brand">12 / 16</span></div>
+    </section>
+    <!-- SLIDE 13: Demo (4/3) — admin UI -->
+    <section class="slide">
+      <div class="slide-head">
+        <span class="slide-num">13</span>
+        <h1 class="slide-title">Demo — Admin UI</h1>
+        <span class="slide-sub">Admin · UI (4/3)</span>
+      </div>
+      <div class="content">
+        <div class="frame"><img src="images/admin-ui.png" style="width: 100%;" alt="Admin UI" /></div>
+      </div>
+      <div class="slide-foot"><span>App DATN — Đồ án tốt nghiệp</span><span class="brand">13 / 16</span></div>
+    </section>
+
+    <!-- SLIDE 14: Hạn chế &amp; Hướng phát triển -->
+    <section class="slide">
+      <div class="slide-head">
+        <span class="slide-num">14</span>
+        <h1 class="slide-title">Hạn chế &amp; Hướng phát triển</h1>
+        <span class="slide-sub">Limitations &amp; Future Work</span>
+      </div>
+      <div class="content">
+        <div class="grid-2">
+          <div>
+            <h3 style="color:var(--danger);margin-top:0">Hạn chế hiện tại</h3>
+            <ul class="bullets">
+              <li>Chưa có <b>cổng thanh toán online</b> (VNPay, Momo, SePay)</li>
+              <li>Bản đồ chưa hỗ trợ <b>chỉ đường</b> (routing)</li>
+              <li>Chưa có <b>người dùng thực tế</b> để đánh giá sâu hơn</li>
+              <li>Giao diện tương tác còn <b>đơn sơ</b>, cần tối ưu UX</li>
+            </ul>
+          </div>
+          <div>
+            <h3 style="color:var(--ok);margin-top:0">Hướng phát triển</h3>
+            <ul class="bullets">
+              <li>Tích hợp <b>thanh toán &amp; deposit</b> chống no-show</li>
+              <li><b>Analytics</b>: doanh thu, dịch vụ phổ biến, peak hours</li>
+              <li>Tích hợp với <b>lịch bên ngoài</b> (Google Calendar, Apple Calendar) để đồng bộ lịch hẹn</li>
+              <li>Phát triển <b>hệ thống gợi ý</b> (Recommendation System) dựa trên lịch sử đặt lịch và sở thích</li>
+              <li>Bổ sung tính năng <b>nhắn tin trong ứng dụng</b> (in-app chat) trực tiếp giữa khách hàng &amp; cửa hàng</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="slide-foot"><span>App DATN — Đồ án tốt nghiệp</span><span class="brand">14 / 16</span></div>
+    </section>
+
+    <!-- SLIDE 15: Kết luận -->
+    <section class="slide">
+      <div class="slide-head">
+        <span class="slide-num">15</span>
+        <h1 class="slide-title">Tổng kết &amp; Thảo luận</h1>
+        <span class="slide-sub">Conclusion &amp; Next Steps</span>
+      </div>
+      <div class="content">
+        <p class="lead" style="margin:0; font-size:20px; line-height:1.55; color:var(--ink); font-weight:500;">
+          Đề tài <b>không đặt mục tiêu đột phá công nghệ</b> — mà tập trung vào việc xây dựng một <b>sản phẩm hoàn chỉnh</b> và tuân theo <b>quy trình phát triển phần mềm thực tế</b>.
+        </p>
+
+        <div class="grid-3" style="flex:1; align-items:stretch; gap:24px;">
+
+          <!-- Card A: Complete product -->
+          <div style="background:linear-gradient(180deg, #EFF6FF 0%, #fff 70%); border:1px solid #BFDBFE; border-top:5px solid var(--primary); border-radius:14px; padding:24px 22px; display:flex; flex-direction:column; gap:14px; box-shadow:0 4px 14px rgba(0,0,0,.05);">
+            <div style="display:flex; align-items:center; gap:14px;">
+              <div style="width:52px; height:52px; border-radius:50%; background:var(--primary); color:#fff; display:flex; align-items:center; justify-content:center; font-size:22px; font-weight:800; box-shadow:0 4px 12px rgba(37,99,235,.35);">✓</div>
+              <div style="font-size:11px; font-weight:700; color:var(--primary); text-transform:uppercase; letter-spacing:1.2px;">Sản phẩm</div>
+            </div>
+            <h3 style="margin:0; font-size:19px; color:var(--ink); font-weight:700; line-height:1.3;">Hoàn chỉnh &amp; sẵn sàng ứng dụng</h3>
+            <p style="margin:0; font-size:15px; color:var(--muted); line-height:1.6;">Chạy mượt trên cả <b>iOS &amp; Android</b>, đủ <b>2 vai trò</b> khách hàng &amp; chủ cửa hàng — end-to-end từ tìm kiếm, đặt lịch, QR check-in đến đánh giá.</p>
+          </div>
+
+          <!-- Card B: SDLC process -->
+          <div style="background:linear-gradient(180deg, #EFF6FF 0%, #fff 70%); border:1px solid #BFDBFE; border-top:5px solid var(--primary); border-radius:14px; padding:24px 22px; display:flex; flex-direction:column; gap:14px; box-shadow:0 4px 14px rgba(0,0,0,.05);">
+            <div style="display:flex; align-items:center; gap:14px;">
+              <div style="width:52px; height:52px; border-radius:50%; background:var(--primary); color:#fff; display:flex; align-items:center; justify-content:center; font-size:22px; font-weight:800; box-shadow:0 4px 12px rgba(37,99,235,.35);">⚙</div>
+              <div style="font-size:11px; font-weight:700; color:var(--primary); text-transform:uppercase; letter-spacing:1.2px;">Quy trình</div>
+            </div>
+            <h3 style="margin:0; font-size:19px; color:var(--ink); font-weight:700; line-height:1.3;">SDLC chuẩn mực, thực tế</h3>
+            <p style="margin:0; font-size:15px; color:var(--muted); line-height:1.6;">Trải nghiệm đầy đủ: <b>Phân tích → Thiết kế → Hiện thực → Kiểm thử → Triển khai</b>; viết tài liệu, quản lý Git, CI/CD như dự án ngoài doanh nghiệp.</p>
+          </div>
+
+          <!-- Card C: Next step -->
+          <div style="background:linear-gradient(180deg, #ECFDF5 0%, #fff 70%); border:1px solid #A7F3D0; border-top:5px solid var(--ok); border-radius:14px; padding:24px 22px; display:flex; flex-direction:column; gap:14px; box-shadow:0 4px 14px rgba(0,0,0,.05);">
+            <div style="display:flex; align-items:center; gap:14px;">
+              <div style="width:52px; height:52px; border-radius:50%; background:var(--ok); color:#fff; display:flex; align-items:center; justify-content:center; font-size:22px; font-weight:800; box-shadow:0 4px 12px rgba(16,185,129,.35);">→</div>
+              <div style="font-size:11px; font-weight:700; color:var(--ok); text-transform:uppercase; letter-spacing:1.2px;">Bước tiếp theo</div>
+            </div>
+            <h3 style="margin:0; font-size:19px; color:var(--ink); font-weight:700; line-height:1.3;">Đưa sản phẩm vào thực tiễn</h3>
+            <p style="margin:0; font-size:15px; color:var(--muted); line-height:1.6;">Thu hút <b>hộ kinh doanh nhỏ</b> dùng thử, thu thập dữ liệu &amp; phản hồi thực tế để <b>iterate</b> sản phẩm theo nhu cầu thị trường.</p>
+          </div>
+
+        </div>
+      </div>
+      <div class="slide-foot"><span>App DATN — Đồ án tốt nghiệp</span><span class="brand">15 / 16</span></div>
+    </section>
+
+    <!-- SLIDE 16: Cảm ơn / Q&A -->
+    <section class="slide">
+      <div class="slide-head">
+        <span class="slide-num">16</span>
+        <h1 class="slide-title">Cảm ơn &amp; Hỏi đáp</h1>
+        <span class="slide-sub">Thank You &amp; Q&amp;A</span>
+      </div>
+      <div class="closing">
+        <h2>Cảm ơn quý Thầy Cô!</h2>
+        <p>Rất mong nhận được nhận xét và câu hỏi từ Hội đồng để hoàn thiện đồ án.</p>
+       
+      </div>
+      <div class="slide-foot"><span>App DATN — Đồ án tốt nghiệp</span><span class="brand">16 / 16</span></div>
+    </section>
+
+  </div>
+</div>
+
+<div class="nav">
+  <button id="prev" title="Trước (←)">‹</button>
+  <span class="count"><span id="cur">1</span> / <span id="tot">16</span></span>
+  <button id="next" title="Sau (→)">›</button>
+  <button id="fullscreen" title="Toàn màn hình (F)" style="margin-left: 4px; display: inline-flex; align-items: center; justify-content: center; font-size: 16px;">⛶</button>
+</div>
+
+<script>
+  // Initialize Mermaid with deck color theme
+  if (window.mermaid) {
+    window.mermaid.initialize({
+      startOnLoad: true,
+      theme: 'base',
+      themeVariables: {
+        primaryColor: '#DBEAFE',
+        primaryTextColor: '#1E40AF',
+        primaryBorderColor: '#2563EB',
+        lineColor: '#2563EB',
+        secondaryColor: '#FEF3C7',
+        tertiaryColor: '#fff',
+        clusterBkg: '#F1F5F9',
+        clusterBorder: '#2563EB',
+        fontFamily: 'Segoe UI, Inter, system-ui, sans-serif',
+        fontSize: '14px'
+      },
+      securityLevel: 'loose',
+      flowchart: { curve: 'basis', padding: 16, nodeSpacing: 40, rankSpacing: 50, htmlLabels: true }
+    });
+  }
+
+  const slides = document.querySelectorAll('.slide');
+  const cur = document.getElementById('cur');
+  const tot = document.getElementById('tot');
+  let i = 0;
+  tot.textContent = slides.length;
+
+  function go(n) {
+    i = Math.max(0, Math.min(slides.length - 1, n));
+    slides.forEach((s, idx) => s.classList.toggle('active', idx === i));
+    cur.textContent = i + 1;
+    location.hash = i + 1;
+  }
+
+  document.getElementById('prev').addEventListener('click', () => go(i - 1));
+  document.getElementById('next').addEventListener('click', () => go(i + 1));
+  
+  const fsBtn = document.getElementById('fullscreen');
+  fsBtn.addEventListener('click', () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(err => console.error(err));
+    } else {
+      document.exitFullscreen();
+    }
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') { e.preventDefault(); go(i + 1); }
+    else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); go(i - 1); }
+    else if (e.key === 'Home') { e.preventDefault(); go(0); }
+    else if (e.key === 'End') { e.preventDefault(); go(slides.length - 1); }
+    else if (e.key.toLowerCase() === 'f') {
+      e.preventDefault();
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(err => console.error(err));
+      } else {
+        document.exitFullscreen();
+      }
+    }
+    else if (/^[1-9]$/.test(e.key)) { e.preventDefault(); go(parseInt(e.key, 10) - 1); }
+    else if (e.key === '0') { e.preventDefault(); go(9); }
+  });
+
+  // Deep link via #N
+  const hash = parseInt(location.hash.replace('#',''), 10);
+  if (!isNaN(hash) && hash >= 1 && hash <= slides.length) go(hash - 1);
+  else go(0);
+</script>
+</body>
+</html>
