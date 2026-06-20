@@ -28,14 +28,16 @@
     overflow: hidden;
   }
 
-  .deck { width: 100vw; height: 100vh; display: flex; align-items: center; justify-content: center; }
+  .deck { width: 100vw; height: 100vh; display: flex; align-items: center; justify-content: center; overflow: hidden; }
   .stage {
     position: relative;
-    width: min(100vw, calc(100vh * 16 / 9));
-    height: min(100vh, calc(100vw * 9 / 16));
+    width: 1280px;
+    height: 720px;
+    flex-shrink: 0;
     background: #fff;
     box-shadow: 0 30px 80px rgba(0,0,0,.45);
     overflow: hidden;
+    transform-origin: center center;
   }
 
   .slide {
@@ -288,9 +290,9 @@
   /* Print */
   @media print {
     html, body { background: #fff; overflow: visible; }
-    .deck { display: block; height: auto; }
-    .stage { box-shadow: none; width: 100%; height: auto; }
-    .slide { display: flex !important; page-break-after: always; position: relative; height: 56.25vw; }
+    .deck { display: block; height: auto; overflow: visible; }
+    .stage { box-shadow: none; width: 1280px; height: 720px; transform: none !important; }
+    .slide { display: flex !important; page-break-after: always; position: relative; }
     .nav { display: none; }
   }
 </style>
@@ -933,8 +935,16 @@ flowchart LR
   const slides = document.querySelectorAll('.slide');
   const cur = document.getElementById('cur');
   const tot = document.getElementById('tot');
+  const stage = document.getElementById('stage');
   let i = 0;
   tot.textContent = slides.length;
+
+  function fitStage() {
+    const scale = Math.min(window.innerWidth / 1280, window.innerHeight / 720);
+    stage.style.transform = `scale(${scale})`;
+  }
+  fitStage();
+  window.addEventListener('resize', fitStage);
 
   function go(n) {
     i = Math.max(0, Math.min(slides.length - 1, n));
